@@ -93,15 +93,12 @@ export default class WechatOAuth {
         }
       : getToken
 
+    this.saveToken = !saveToken ? (openid: string, token: object) => {this.store[openid] = token} : saveToken
+    
     if (!saveToken && (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'prod')) {
       this.logger.warn(`Please don't save oauth token into memory under production!`)
     }
 
-    if (!saveToken) {
-      this.saveToken = (openid: string, token: object) => {
-        this.store[openid] = token
-      }
-    }
   }
 
   public getAuthorizeURL(redirect: string, state?: string, scope?: string, href?: string) {
@@ -135,7 +132,7 @@ export default class WechatOAuth {
       grant_type: 'authorization_code',
     }
 
-    return this.processAccessToken(url, info)
+    return await this.processAccessToken(url, info)
   }
 
   public async getClientAccessToken() {
@@ -146,7 +143,7 @@ export default class WechatOAuth {
       secret: this.appSecret,
     }
 
-    return this.processAccessToken(url, info)
+    return await this.processAccessToken(url, info)
   }
 
   public async refreshAccessToken(refreshToken: string) {
@@ -157,7 +154,7 @@ export default class WechatOAuth {
       refresh_token: refreshToken,
     }
 
-    return this.processAccessToken(url, info)
+    return await this.processAccessToken(url, info)
   }
 
   public async getUserByOpenIdAndAccessToken(openId: string, accessToken: string, lang: string = 'en') {
@@ -172,7 +169,7 @@ export default class WechatOAuth {
   }
 
   public async getUserByOpenId(openId: string, lang = 'en') {
-    const token = this.getToken(openId)
+    const token = await this.getToken(openId)
     if (!token) {
       const error = new Error(`No token for ${openId}, please authorize first.`)
       error.name = 'NoOAuthTokenError'
@@ -182,17 +179,17 @@ export default class WechatOAuth {
 
     const accessToken = new AccessToken(token)
     if (accessToken.isValid()) {
-      return this.getUserByOpenIdAndAccessToken(openId, accessToken.access_token, lang)
+      return await this.getUserByOpenIdAndAccessToken(openId, accessToken.access_token, lang)
     } else {
       const refreshedToken = await this.refreshAccessToken(accessToken.refresh_token)
-      return this.getUserByOpenIdAndAccessToken(openId, refreshedToken.access_token, lang)
+      return await this.getUserByOpenIdAndAccessToken(openId, refreshedToken.access_token, lang)
     }
   }
 
   public async getUserByCode(code: string, lang = 'en') {
     const accessToken = await this.getAccessToken(code)
     const openId = accessToken.openid
-    return this.getUserByOpenId(openId, lang)
+    return await this.getUserByOpenId(openId, lang)
   }
 
   public async getQRCodeTicket(
@@ -223,7 +220,7 @@ export default class WechatOAuth {
   ) {
     const ticketResult = await this.getQRCodeTicket(data, token)
 
-    return this.getQRCodeLinkByTicket(ticketResult.ticket)
+    return await this.getQRCodeLinkByTicket(ticketResult.ticket)
   }
 
   public async getQRCodeLinkByTicket(ticket: string) {
@@ -305,7 +302,7 @@ export default class WechatOAuth {
     })
 
     try {
-      this.saveToken(tokenResult.openid, accessToken)
+      await this.saveToken(tokenResult.openid, accessToken)
     } catch (e) {
       this.logger.error(e)
     }

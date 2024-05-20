@@ -189,7 +189,11 @@ export default class WechatOAuth {
   public async getUserByCode(code: string, lang = 'en') {
     const accessToken = await this.getAccessToken(code)
     const openId = accessToken.openid
-    return await this.getUserByOpenId(openId, lang)
+    try {
+        return await this.getUserByOpenId(openId, lang);
+    } catch (error) {
+      return await this.getUserByOpenIdAndAccessToken(openId, accessToken.access_token, lang);
+    }
   }
 
   public async getQRCodeTicket(

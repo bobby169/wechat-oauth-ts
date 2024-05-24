@@ -64,7 +64,7 @@ export class AccessToken implements IAccessToken {
   public isValid() {
     const time = new Date().getTime()
 
-    return !!this.access_token && time < this.created_at + this.expires_in * 1000
+    return !!this.access_token && time < Number(this.created_at) + this.expires_in * 1000
   }
 }
 
